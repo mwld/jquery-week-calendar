@@ -56,6 +56,7 @@
         timeslotsPerHour: 4,
         minDate: null,
         maxDate: null,
+        excludeFromOverlap: ".wc-background",
         showHeader: true,
         buttons: true,
         buttonText: {
@@ -1557,17 +1558,21 @@
                       var newLeft = groupIndex * 10;
                   }
                   $.each(curGroup, function() {
+                    if (!$(this).hasClass('wc-background')) {
                       // bring mouseovered event to the front
                       if (!self.options.overlapEventsSeparate) {
                         $(this).bind('mouseover.z-index', function() {
                             var $elem = $(this);
-                            $.each(curGroup, function() {
-                              $(this).css({'z-index': '1'});
-                            });
-                            $elem.css({'z-index': '3'});
+
+                              $.each(curGroup, function() {
+                                $(this).css({'z-index': '1'});
+                              });
+                              $elem.css({'z-index': '3'});
+
                         });
                       }
-                      $(this).css({width: newWidth + '%', left: newLeft + '%', right: 0});
+                    }
+                      $(this).css({width: newWidth + '%', left: newLeft + '%', right: 0}).trigger('adjustOverlappingEventsFinished');
                   });
                 });
             });
@@ -1579,7 +1584,10 @@
         * Find groups of overlapping events
         */
       _groupOverlappingEventElements: function($weekDay) {
-          var $events = $weekDay.find('.wc-cal-event:visible');
+          var options = this.options;
+          var exclude = options.excludeFromOverlap;
+          var $events = $weekDay.find(".wc-cal-event:visible:not(" + exclude + ")");
+
           var sortedEvents = $events.sort(function(a, b) {
             return $(a).data('calEvent').start.getTime() - $(b).data('calEvent').start.getTime();
           });
@@ -1712,7 +1720,7 @@
           var options = this.options;
           var startOffsetMillis = options.businessHours.limitDisplay ? options.businessHours.start * 3600000 : 0;
           var start = new Date($weekDay.data('startDate').getTime() + startOffsetMillis + Math.round(top / options.timeslotHeight) * options.millisPerTimeslot);
-          var end = new Date(start.getTime() + ($calEvent.height() / options.timeslotHeight) * options.millisPerTimeslot);
+          var end = new Date(start.getTime() + ($calEvent.outerHeight() / options.timeslotHeight) * options.millisPerTimeslot);
           return {start: this._getDSTdayShift(start, -1), end: this._getDSTdayShift(end, -1)};
       },
 
